@@ -1,0 +1,18 @@
+{
+  "name": "低心率跑步训练",
+  "short_name": "低心率跑",
+  "description": "24周低心率跑步训练计划，支持顺延和跑步数据记录。",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f7f4ee",
+  "theme_color": "#1f6f64",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
