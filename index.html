@@ -1,0 +1,990 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#1f6f64">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="低心率跑">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <title>低心率跑步训练</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f7f4ee;
+      --surface: #ffffff;
+      --ink: #1b2423;
+      --muted: #687571;
+      --line: #ddd8cc;
+      --green: #1f6f64;
+      --mint: #d8e7a4;
+      --coral: #e66b4e;
+      --blue: #316a93;
+      --gold: #c5923b;
+      --soft: #efeae0;
+      --shadow: 0 14px 34px rgba(35, 42, 38, .12);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--ink);
+      padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
+    }
+    button, input, textarea, select { font: inherit; }
+    button { cursor: pointer; }
+    .app {
+      width: min(760px, 100%);
+      margin: 0 auto;
+      padding: 16px 14px 96px;
+    }
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 8px 2px 16px;
+    }
+    .brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
+    .logo {
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      background: var(--green);
+      display: grid;
+      place-items: center;
+      color: #fff;
+      font-weight: 800;
+      box-shadow: var(--shadow);
+      flex: 0 0 auto;
+    }
+    h1 { font-size: 22px; line-height: 1.15; margin: 0; letter-spacing: 0; }
+    .date { color: var(--muted); font-size: 13px; margin-top: 2px; }
+    .pill {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 7px 10px;
+      color: var(--green);
+      background: rgba(255,255,255,.64);
+      font-size: 13px;
+      white-space: nowrap;
+    }
+    .hero {
+      background: var(--green);
+      color: #fff;
+      border-radius: 8px;
+      padding: 18px;
+      box-shadow: var(--shadow);
+    }
+    .stage { color: var(--mint); font-size: 13px; margin-bottom: 8px; }
+    .hero h2 { margin: 0; font-size: 28px; line-height: 1.12; letter-spacing: 0; }
+    .hero p { color: rgba(255,255,255,.84); line-height: 1.55; margin: 10px 0 0; }
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-top: 16px;
+    }
+    .metric {
+      background: rgba(255,255,255,.12);
+      border: 1px solid rgba(255,255,255,.16);
+      border-radius: 8px;
+      padding: 10px;
+      min-height: 70px;
+    }
+    .metric span { color: rgba(255,255,255,.72); font-size: 12px; display: block; }
+    .metric strong { display: block; margin-top: 5px; font-size: 17px; line-height: 1.15; }
+    .section-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin: 22px 2px 10px;
+    }
+    .section-title h3 { font-size: 17px; margin: 0; }
+    .section-title button {
+      border: 0;
+      background: transparent;
+      color: var(--green);
+      padding: 6px;
+      font-weight: 700;
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 14px;
+      box-shadow: 0 8px 24px rgba(35,42,38,.06);
+    }
+    .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
+    .actions .wide { grid-column: 1 / -1; }
+    .btn {
+      border: 0;
+      border-radius: 8px;
+      min-height: 46px;
+      padding: 10px 12px;
+      font-weight: 700;
+      color: #fff;
+      background: var(--green);
+    }
+    .btn.secondary { background: var(--blue); }
+    .btn.ghost { background: var(--soft); color: var(--ink); }
+    .btn.warn { background: var(--coral); }
+    .tabs {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      padding: 9px 12px calc(9px + env(safe-area-inset-bottom));
+      background: rgba(247,244,238,.92);
+      backdrop-filter: blur(14px);
+      border-top: 1px solid var(--line);
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      z-index: 10;
+    }
+    .tab {
+      border: 0;
+      border-radius: 8px;
+      padding: 8px 4px;
+      color: var(--muted);
+      background: transparent;
+      min-height: 48px;
+      font-size: 12px;
+    }
+    .tab.active { background: var(--green); color: #fff; }
+    .list { display: grid; gap: 10px; }
+    .row {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      border-bottom: 1px solid var(--line);
+      padding: 10px 0;
+    }
+    .row:last-child { border-bottom: 0; }
+    .row b { font-size: 15px; }
+    .row span { color: var(--muted); font-size: 13px; line-height: 1.45; text-align: right; }
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    label { display: grid; gap: 6px; color: var(--muted); font-size: 13px; }
+    input, textarea, select {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 11px;
+      background: #fff;
+      color: var(--ink);
+    }
+    textarea { min-height: 74px; resize: vertical; }
+    dialog {
+      border: 0;
+      width: min(560px, calc(100% - 24px));
+      border-radius: 8px;
+      padding: 0;
+      box-shadow: var(--shadow);
+    }
+    dialog::backdrop { background: rgba(20, 27, 25, .42); }
+    .modal { padding: 16px; }
+    .modal h3 { margin: 0 0 12px; }
+    .hidden { display: none !important; }
+    .note { color: var(--muted); font-size: 13px; line-height: 1.55; }
+    .progress {
+      height: 10px;
+      background: #e9e2d6;
+      border-radius: 999px;
+      overflow: hidden;
+      margin-top: 10px;
+    }
+    .progress div { height: 100%; background: var(--mint); width: 0%; }
+    .calendar {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 6px;
+    }
+    .dow {
+      color: var(--muted);
+      font-size: 12px;
+      text-align: center;
+      padding: 2px 0 5px;
+    }
+    .day {
+      border: 1px solid var(--line);
+      background: #fff;
+      border-radius: 8px;
+      min-height: 74px;
+      padding: 7px 5px;
+      text-align: left;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 5px;
+    }
+    .day.out { opacity: .38; }
+    .day.today { border-color: var(--green); box-shadow: inset 0 0 0 1px var(--green); }
+    .day.selected { background: #e7f0d0; border-color: #9cbf5e; }
+    .day-num { font-size: 13px; color: var(--muted); }
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 20px;
+      border-radius: 999px;
+      padding: 2px 6px;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--ink);
+      background: var(--soft);
+      white-space: nowrap;
+    }
+    .tag.run { background: #d8e7a4; }
+    .tag.strength { background: #dbe8f1; color: #17455f; }
+    .tag.tempo { background: #f1d2c7; color: #73331f; }
+    .tag.rest { background: #eee8dc; color: #726b61; }
+    .tag.done { background: #1f6f64; color: #fff; }
+    .tag.skipped { background: #e66b4e; color: #fff; }
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 10px 0 0;
+    }
+    .chart-card { padding: 12px 12px 8px; }
+    .chart-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 12px;
+      margin-bottom: 6px;
+    }
+    .chart-head b { font-size: 15px; }
+    .chart-head span { color: var(--muted); font-size: 12px; }
+    .chart svg { width: 100%; height: auto; display: block; }
+    .chart-empty {
+      min-height: 150px;
+      display: grid;
+      place-items: center;
+      color: var(--muted);
+      background: #faf8f2;
+      border-radius: 8px;
+      font-size: 13px;
+      text-align: center;
+      padding: 18px;
+    }
+    .goal-ring {
+      display: grid;
+      grid-template-columns: 132px 1fr;
+      gap: 14px;
+      align-items: center;
+    }
+    .goal-ring svg { width: 132px; height: 132px; }
+    .goal-ring strong { display: block; font-size: 30px; color: var(--green); }
+    .danger-zone { margin-top: 20px; }
+    .data-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+    .file-input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+    @media (max-width: 430px) {
+      .app { padding-left: 12px; padding-right: 12px; }
+      .calendar { gap: 4px; }
+      .day { min-height: 66px; padding: 6px 4px; }
+      .tag { font-size: 10px; padding: 2px 5px; }
+      .goal-ring { grid-template-columns: 1fr; text-align: center; justify-items: center; }
+    }
+    @media (max-width: 380px) {
+      .metrics { grid-template-columns: 1fr; }
+      .grid2 { grid-template-columns: 1fr; }
+      .hero h2 { font-size: 24px; }
+      h1 { font-size: 19px; }
+      .day { min-height: 58px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header>
+      <div class="brand">
+        <div class="logo">HR</div>
+        <div>
+          <h1>低心率跑步训练</h1>
+          <div class="date" id="todayText"></div>
+        </div>
+      </div>
+      <div class="pill" id="weekText"></div>
+    </header>
+
+    <section id="viewToday"></section>
+    <section id="viewPlan" class="hidden"></section>
+    <section id="viewStats" class="hidden"></section>
+    <section id="viewSettings" class="hidden"></section>
+  </main>
+
+  <nav class="tabs" aria-label="主导航">
+    <button class="tab active" data-tab="today">今日</button>
+    <button class="tab" data-tab="plan">计划</button>
+    <button class="tab" data-tab="stats">趋势</button>
+    <button class="tab" data-tab="settings">设置</button>
+  </nav>
+
+  <dialog id="recordDialog">
+    <form class="modal" method="dialog" id="recordForm">
+      <h3>记录这次训练</h3>
+      <div class="grid2">
+        <label>距离 km<input name="distance" inputmode="decimal" placeholder="5.00"></label>
+        <label>用时 分钟<input name="minutes" inputmode="decimal" placeholder="42"></label>
+        <label>平均配速<input name="pace" placeholder="8:24"></label>
+        <label>平均心率<input name="avgHr" inputmode="numeric" placeholder="143"></label>
+        <label>最高心率<input name="maxHr" inputmode="numeric" placeholder="158"></label>
+        <label>体感 RPE<select name="rpe">
+          <option value="3">3 很轻松</option>
+          <option value="4">4 轻松</option>
+          <option value="5">5 稳定</option>
+          <option value="6">6 有点吃力</option>
+          <option value="7">7 偏强</option>
+        </select></label>
+      </div>
+      <label style="margin-top:10px">备注<textarea name="note" placeholder="天气、路线、身体感觉"></textarea></label>
+      <div class="actions">
+        <button class="btn ghost" value="cancel" type="button" id="cancelRecord">取消</button>
+        <button class="btn" value="default">保存完成</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script>
+    const STORAGE_KEY = "lowHrRunningPlan.v1";
+    const MS_DAY = 86400000;
+
+    const stages = [
+      { from: 1, to: 4, name: "低心率适应期", focus: "跑走结合，把多数训练压在 130-145。" },
+      { from: 5, to: 8, name: "有氧积累期", focus: "延长低心率时间，加入少量短加速。" },
+      { from: 9, to: 12, name: "稳定提升期", focus: "保留低心率主线，少量 150-160 中等跑。" },
+      { from: 13, to: 24, name: "巩固进阶期", focus: "4周循环进阶，逐步接近 6:00/km + HR143。" }
+    ];
+
+    const templates = {
+      easy45: { type: "低心率跑", short: "跑", duration: "45分钟", distance: "不限", hr: "130-145", detail: "热身快走10分钟；慢跑或跑走结合；超过150就走到140以内再跑。" },
+      easy5k: { type: "低心率5km", short: "5K", duration: "约40-55分钟", distance: "5km", hr: "130-145", detail: "不追配速，平均心率尽量压到145以内。" },
+      long60: { type: "长有氧跑", short: "长", duration: "60分钟", distance: "不限", hr: "130-145", detail: "全程可聊天强度，跑不住就跑走结合。" },
+      strides: { type: "轻松跑+短加速", short: "快", duration: "45分钟", distance: "不限", hr: "130-150", detail: "轻松跑后做4组15-20秒轻快跑，组间走或慢跑90秒。" },
+      tempo: { type: "中等节奏跑", short: "节", duration: "50-60分钟", distance: "不限", hr: "主段150-160", detail: "10分钟热身；3组6分钟中等跑，组间慢跑/走3分钟；放松10分钟。" },
+      strength: { type: "力量训练", short: "力", duration: "25分钟", distance: "无", hr: "轻中等", detail: "深蹲、箭步蹲、臀桥、提踵、平板支撑、死虫各2-3组。" },
+      recovery: { type: "恢复活动", short: "恢", duration: "30分钟", distance: "不限", hr: "120-140", detail: "快走、很轻松慢跑或骑车，结束后简单拉伸。" }
+    };
+
+    function buildPlan(startDate) {
+      const plan = [];
+      for (let week = 1; week <= 24; week++) {
+        const deload = week % 4 === 0;
+        let weekItems;
+        if (week <= 4) {
+          weekItems = deload ? ["easy45", "easy5k", "strength"] : ["easy45", "easy5k", "long60", "strength"];
+        } else if (week <= 8) {
+          weekItems = deload ? ["easy45", "strides", "strength"] : ["easy45", "strides", "long60", "strength"];
+        } else if (week <= 12) {
+          weekItems = deload ? ["easy45", "easy5k", "strength"] : ["easy45", "tempo", "long60", "strength"];
+        } else {
+          const cycleWeek = ((week - 13) % 4) + 1;
+          weekItems = cycleWeek === 4 ? ["easy45", "easy5k", "strength"] : ["easy45", "tempo", "long60", "strength"];
+        }
+        weekItems.forEach((key, index) => {
+          const date = new Date(startDate.getTime() + ((week - 1) * 7 + index * 2) * MS_DAY);
+          plan.push({
+            id: `w${week}-${index}-${key}`,
+            week,
+            key,
+            scheduled: toISO(date),
+            status: "pending",
+            ...templates[key]
+          });
+        });
+      }
+      return plan;
+    }
+
+    function toISO(date) {
+      const d = new Date(date);
+      d.setHours(12, 0, 0, 0);
+      return d.toISOString().slice(0, 10);
+    }
+
+    function fromISO(iso) {
+      const d = new Date(`${iso}T12:00:00`);
+      return Number.isNaN(d.getTime()) ? new Date() : d;
+    }
+
+    function cnDate(date = new Date()) {
+      return new Intl.DateTimeFormat("zh-CN", { month: "long", day: "numeric", weekday: "short" }).format(date);
+    }
+
+    function monthLabel(date) {
+      return new Intl.DateTimeFormat("zh-CN", { year: "numeric", month: "long" }).format(date);
+    }
+
+    function paceToSeconds(pace) {
+      if (!pace || !pace.includes(":")) return null;
+      const [m, s] = pace.split(":").map(Number);
+      if (!Number.isFinite(m) || !Number.isFinite(s)) return null;
+      return m * 60 + s;
+    }
+
+    function secondsToPace(seconds) {
+      if (!Number.isFinite(seconds)) return "--";
+      const m = Math.floor(seconds / 60);
+      const s = Math.round(seconds % 60).toString().padStart(2, "0");
+      return `${m}:${s}/km`;
+    }
+
+    function defaultState() {
+      const today = new Date();
+      return {
+        createdAt: toISO(today),
+        targetPaceSec: 360,
+        targetHr: 143,
+        calendarMonth: toISO(new Date(today.getFullYear(), today.getMonth(), 1)),
+        selectedDate: toISO(today),
+        records: [],
+        plan: buildPlan(today)
+      };
+    }
+
+    function normalizeState(parsed) {
+      const fallback = defaultState();
+      const state = { ...fallback, ...parsed };
+      state.records = Array.isArray(parsed.records) ? parsed.records : [];
+      state.plan = Array.isArray(parsed.plan) ? parsed.plan : fallback.plan;
+      state.plan = state.plan.map((item) => ({ ...item, short: item.short || shortFor(item), key: item.key || keyFor(item) }));
+      state.calendarMonth = state.calendarMonth || toISO(new Date());
+      state.selectedDate = state.selectedDate || toISO(new Date());
+      return state;
+    }
+
+    function loadState() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return defaultState();
+        return normalizeState(JSON.parse(raw));
+      } catch {
+        return defaultState();
+      }
+    }
+
+    let state = loadState();
+
+    function saveState() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }
+
+    function currentWorkout() {
+      return state.plan.find((item) => item.status === "pending") || state.plan[state.plan.length - 1];
+    }
+
+    function currentStage(week) {
+      return stages.find((stage) => week >= stage.from && week <= stage.to) || stages[stages.length - 1];
+    }
+
+    function keyFor(item) {
+      if (item.key) return item.key;
+      if (item.type.includes("力量")) return "strength";
+      if (item.type.includes("节奏")) return "tempo";
+      if (item.type.includes("短加速")) return "strides";
+      if (item.type.includes("长")) return "long60";
+      if (item.type.includes("5")) return "easy5k";
+      return "easy45";
+    }
+
+    function shortFor(item) {
+      return templates[keyFor(item)]?.short || "练";
+    }
+
+    function tagClass(item) {
+      if (!item) return "rest";
+      if (item.status === "done") return "done";
+      if (item.status === "skipped") return "skipped";
+      if (keyFor(item) === "strength") return "strength";
+      if (["tempo", "strides"].includes(keyFor(item))) return "tempo";
+      return "run";
+    }
+
+    function render() {
+      const workout = currentWorkout();
+      document.getElementById("todayText").textContent = cnDate();
+      document.getElementById("weekText").textContent = `第 ${workout.week} 周`;
+      renderToday(workout);
+      renderPlan();
+      renderStats();
+      renderSettings();
+    }
+
+    function renderToday(workout) {
+      const todayIso = toISO(new Date());
+      const isDue = workout.scheduled <= todayIso;
+      const stage = currentStage(workout.week);
+      const completed = state.plan.filter((item) => item.status === "done").length;
+      const progress = Math.round((completed / state.plan.length) * 100);
+      const title = isDue ? workout.type : "今天休息";
+      const description = isDue
+        ? workout.detail
+        : `下一次训练已安排在 ${workout.scheduled}：${workout.type}。今天可以散步、拉伸或好好睡一觉。`;
+      document.getElementById("viewToday").innerHTML = `
+        <div class="hero">
+          <div class="stage">${stage.name} · ${stage.focus}</div>
+          <h2>${title}</h2>
+          <p>${description}</p>
+          <div class="metrics">
+            <div class="metric"><span>${isDue ? "目标时长" : "下次日期"}</span><strong>${isDue ? workout.duration : workout.scheduled}</strong></div>
+            <div class="metric"><span>${isDue ? "目标距离" : "下次内容"}</span><strong>${isDue ? workout.distance : workout.short}</strong></div>
+            <div class="metric"><span>心率区间</span><strong>${workout.hr}</strong></div>
+          </div>
+          <div class="progress"><div style="width:${progress}%"></div></div>
+        </div>
+        <div class="section-title"><h3>今天怎么做</h3></div>
+        <div class="card">
+          ${isDue ? `
+            <div class="row"><b>热身</b><span>快走8-10分钟，活动髋、膝、踝。</span></div>
+            <div class="row"><b>主训练</b><span>${workout.detail}</span></div>
+            <div class="row"><b>放松</b><span>慢走5-10分钟，拉伸小腿、臀腿。</span></div>
+            <div class="actions">
+              <button class="btn wide" id="openRecord">完成并记录</button>
+              <button class="btn secondary" id="doneOnly">直接完成</button>
+              <button class="btn ghost" id="postpone">顺延</button>
+              <button class="btn warn wide" id="skip">跳过这次</button>
+            </div>
+          ` : `
+            <div class="row"><b>恢复</b><span>轻松散步20-30分钟，或做小腿、臀腿、髋部拉伸。</span></div>
+            <div class="row"><b>下次训练</b><span>${workout.scheduled} · ${workout.type} · HR ${workout.hr}</span></div>
+            <div class="actions">
+              <button class="btn wide" id="goPlan">查看计划日历</button>
+              <button class="btn ghost wide" id="rescheduleToday">从今天重新安排</button>
+            </div>
+          `}
+        </div>
+      `;
+      if (isDue) {
+        document.getElementById("openRecord").addEventListener("click", () => document.getElementById("recordDialog").showModal());
+        document.getElementById("doneOnly").addEventListener("click", () => completeWorkout());
+        document.getElementById("postpone").addEventListener("click", postponeWorkout);
+        document.getElementById("skip").addEventListener("click", skipWorkout);
+      } else {
+        document.getElementById("goPlan").addEventListener("click", () => activateTab("plan"));
+        document.getElementById("rescheduleToday").addEventListener("click", rescheduleFromToday);
+      }
+    }
+
+    function renderPlan() {
+      const month = fromISO(state.calendarMonth);
+      const selectedDate = state.selectedDate || toISO(new Date());
+      const selectedItems = workoutsOn(selectedDate);
+      document.getElementById("viewPlan").innerHTML = `
+        <div class="section-title">
+          <button id="prevMonth">上月</button>
+          <h3>${monthLabel(month)}</h3>
+          <button id="nextMonth">下月</button>
+        </div>
+        <div class="card">
+          <div class="calendar">
+            ${["一","二","三","四","五","六","日"].map((d) => `<div class="dow">${d}</div>`).join("")}
+            ${calendarCells(month, selectedDate)}
+          </div>
+          <div class="legend">
+            <span class="tag run">跑</span>
+            <span class="tag tempo">节/快</span>
+            <span class="tag strength">力</span>
+            <span class="tag done">已完成</span>
+            <span class="tag skipped">跳过</span>
+            <span class="tag rest">休</span>
+          </div>
+        </div>
+        <div class="section-title"><h3>${selectedDate} 训练</h3><button id="fillWeek">从今天重排</button></div>
+        ${selectedItems.length ? selectedItems.map(workoutDetail).join("") : `<div class="card note">今天安排休息。可以散步、拉伸，或者把睡眠补好。</div>`}
+      `;
+      document.getElementById("prevMonth").addEventListener("click", () => shiftMonth(-1));
+      document.getElementById("nextMonth").addEventListener("click", () => shiftMonth(1));
+      document.getElementById("fillWeek").addEventListener("click", rescheduleFromToday);
+      document.querySelectorAll("[data-date]").forEach((button) => {
+        button.addEventListener("click", () => {
+          state.selectedDate = button.dataset.date;
+          saveState();
+          renderPlan();
+        });
+      });
+    }
+
+    function calendarCells(month, selectedDate) {
+      const first = new Date(month.getFullYear(), month.getMonth(), 1, 12);
+      const firstWeekday = (first.getDay() + 6) % 7;
+      const start = new Date(first.getTime() - firstWeekday * MS_DAY);
+      const today = toISO(new Date());
+      return Array.from({ length: 42 }, (_, i) => {
+        const date = new Date(start.getTime() + i * MS_DAY);
+        const iso = toISO(date);
+        const items = workoutsOn(iso);
+        const item = items[0];
+        const out = date.getMonth() !== month.getMonth() ? " out" : "";
+        const isToday = iso === today ? " today" : "";
+        const selected = iso === selectedDate ? " selected" : "";
+        const label = item ? item.short : "休";
+        return `
+          <button class="day${out}${isToday}${selected}" data-date="${iso}" aria-label="${iso} ${item ? item.type : "休息"}">
+            <span class="day-num">${date.getDate()}</span>
+            <span class="tag ${tagClass(item)}">${label}</span>
+          </button>
+        `;
+      }).join("");
+    }
+
+    function workoutsOn(iso) {
+      return state.plan.filter((item) => item.scheduled === iso);
+    }
+
+    function workoutDetail(item) {
+      return `
+        <div class="card">
+          <div class="row"><b>第${item.week}周 · ${item.type}</b><span>${statusText(item.status)}</span></div>
+          <div class="row"><b>${item.duration}</b><span>${item.distance} · HR ${item.hr}</span></div>
+          <p class="note">${item.detail}</p>
+        </div>
+      `;
+    }
+
+    function statusText(status) {
+      return ({ pending: "待完成", done: "已完成", skipped: "已跳过" })[status] || status;
+    }
+
+    function shiftMonth(delta) {
+      const month = fromISO(state.calendarMonth);
+      const next = new Date(month.getFullYear(), month.getMonth() + delta, 1, 12);
+      state.calendarMonth = toISO(next);
+      state.selectedDate = toISO(next);
+      saveState();
+      renderPlan();
+    }
+
+    function renderStats() {
+      const runs = state.records
+        .filter((record) => Number(record.distance) > 0 || record.avgHr || record.pace)
+        .map((record) => ({
+          ...record,
+          distanceNum: Number(record.distance || 0),
+          hrNum: Number(record.avgHr || 0),
+          maxHrNum: Number(record.maxHr || 0),
+          paceSec: paceToSeconds(record.pace),
+          rpeNum: Number(record.rpe || 0)
+        }));
+      const last5 = runs.filter((record) => record.distanceNum >= 4.5).slice(-5);
+      const avgHr = average(last5.map((r) => r.hrNum).filter(Boolean));
+      const paceValues = last5.map((r) => r.paceSec).filter(Boolean);
+      const avgPace = average(paceValues);
+      const latestPace = paceValues[paceValues.length - 1];
+      const latestHr = last5[last5.length - 1]?.hrNum;
+      const targetScore = latestPace && latestHr
+        ? Math.max(0, Math.min(100, Math.round(100 - ((latestPace - state.targetPaceSec) / 3 + (latestHr - state.targetHr) * 3))))
+        : 0;
+      document.getElementById("viewStats").innerHTML = `
+        <div class="section-title"><h3>趋势</h3></div>
+        <div class="grid2">
+          <div class="card"><div class="row"><b>完成训练</b><span>${state.records.length} 次</span></div></div>
+          <div class="card"><div class="row"><b>最近5km心率</b><span>${avgHr ? Math.round(avgHr) : "--"}</span></div></div>
+          <div class="card"><div class="row"><b>最近5km配速</b><span>${avgPace ? secondsToPace(avgPace) : "--"}</span></div></div>
+          <div class="card"><div class="row"><b>目标接近度</b><span>${targetScore}%</span></div></div>
+        </div>
+        <div class="section-title"><h3>核心图表</h3></div>
+        <div class="list">
+          <div class="card chart-card">${lineChart("平均心率趋势", runs.filter((r) => r.hrNum).slice(-12), "hrNum", "bpm", "#1f6f64", state.targetHr)}</div>
+          <div class="card chart-card">${paceChart(runs.filter((r) => r.paceSec).slice(-12))}</div>
+          <div class="card chart-card">${barChart("每周跑量", weeklyDistance(runs), "km", "#316a93")}</div>
+          <div class="card chart-card">${goalChart(targetScore, latestPace, latestHr)}</div>
+        </div>
+        <div class="section-title"><h3>最近记录</h3></div>
+        <div class="list">
+          ${state.records.slice(-8).reverse().map((r) => `
+            <div class="card">
+              <div class="row"><b>${r.type}</b><span>${r.date}</span></div>
+              <div class="row"><b>${r.distance || "--"}km · ${r.pace || "--"}</b><span>均心 ${r.avgHr || "--"} / 最高 ${r.maxHr || "--"}</span></div>
+              ${r.note ? `<p class="note">${escapeHtml(r.note)}</p>` : ""}
+            </div>
+          `).join("") || `<div class="card note">还没有训练记录。完成并记录一次后，图表会自动开始绘制。</div>`}
+        </div>
+      `;
+    }
+
+    function chartFrame(title, sub, body) {
+      return `
+        <div class="chart-head"><b>${title}</b><span>${sub}</span></div>
+        <div class="chart">${body}</div>
+      `;
+    }
+
+    function lineChart(title, rows, field, unit, color, target = null) {
+      if (rows.length < 2) return chartFrame(title, "至少需要2条记录", `<div class="chart-empty">记录更多训练后显示趋势</div>`);
+      const values = rows.map((r) => Number(r[field])).filter((v) => Number.isFinite(v));
+      const min = Math.min(...values, target || values[0]) - 4;
+      const max = Math.max(...values, target || values[0]) + 4;
+      const points = values.map((v, i) => {
+        const x = 34 + (i * (282 / Math.max(values.length - 1, 1)));
+        const y = 132 - ((v - min) / (max - min || 1)) * 96;
+        return { x, y, v };
+      });
+      const line = points.map((p) => `${p.x},${p.y}`).join(" ");
+      const targetY = target ? 132 - ((target - min) / (max - min || 1)) * 96 : null;
+      const latest = values[values.length - 1];
+      const svg = `
+        <svg viewBox="0 0 340 170" role="img" aria-label="${title}">
+          <rect x="0" y="0" width="340" height="170" rx="8" fill="#faf8f2"/>
+          <line x1="34" y1="36" x2="316" y2="36" stroke="#e5ded2"/>
+          <line x1="34" y1="84" x2="316" y2="84" stroke="#e5ded2"/>
+          <line x1="34" y1="132" x2="316" y2="132" stroke="#e5ded2"/>
+          ${targetY ? `<line x1="34" y1="${targetY}" x2="316" y2="${targetY}" stroke="#e66b4e" stroke-dasharray="5 5"/><text x="38" y="${targetY - 6}" fill="#e66b4e" font-size="10">目标 ${target}</text>` : ""}
+          <polyline points="${line}" fill="none" stroke="${color}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+          ${points.map((p) => `<circle cx="${p.x}" cy="${p.y}" r="4" fill="${color}"/>`).join("")}
+          <text x="34" y="154" fill="#687571" font-size="11">最近 ${values.length} 次</text>
+          <text x="238" y="154" fill="${color}" font-size="13" font-weight="700">最新 ${Math.round(latest)} ${unit}</text>
+        </svg>
+      `;
+      return chartFrame(title, `最新 ${Math.round(latest)} ${unit}`, svg);
+    }
+
+    function paceChart(rows) {
+      if (rows.length < 2) return chartFrame("配速趋势", "至少需要2条记录", `<div class="chart-empty">记录平均配速后显示趋势</div>`);
+      const values = rows.map((r) => r.paceSec).filter(Boolean);
+      const min = Math.min(...values, state.targetPaceSec) - 20;
+      const max = Math.max(...values, state.targetPaceSec) + 20;
+      const points = values.map((v, i) => {
+        const x = 34 + (i * (282 / Math.max(values.length - 1, 1)));
+        const y = 132 - ((max - v) / (max - min || 1)) * 96;
+        return { x, y, v };
+      });
+      const line = points.map((p) => `${p.x},${p.y}`).join(" ");
+      const targetY = 132 - ((max - state.targetPaceSec) / (max - min || 1)) * 96;
+      const latest = values[values.length - 1];
+      const svg = `
+        <svg viewBox="0 0 340 170" role="img" aria-label="配速趋势">
+          <rect x="0" y="0" width="340" height="170" rx="8" fill="#faf8f2"/>
+          <line x1="34" y1="36" x2="316" y2="36" stroke="#e5ded2"/>
+          <line x1="34" y1="84" x2="316" y2="84" stroke="#e5ded2"/>
+          <line x1="34" y1="132" x2="316" y2="132" stroke="#e5ded2"/>
+          <line x1="34" y1="${targetY}" x2="316" y2="${targetY}" stroke="#e66b4e" stroke-dasharray="5 5"/>
+          <text x="38" y="${targetY - 6}" fill="#e66b4e" font-size="10">目标 6:00</text>
+          <polyline points="${line}" fill="none" stroke="#316a93" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+          ${points.map((p) => `<circle cx="${p.x}" cy="${p.y}" r="4" fill="#316a93"/>`).join("")}
+          <text x="34" y="154" fill="#687571" font-size="11">越往上越快</text>
+          <text x="226" y="154" fill="#316a93" font-size="13" font-weight="700">最新 ${secondsToPace(latest)}</text>
+        </svg>
+      `;
+      return chartFrame("配速趋势", `最新 ${secondsToPace(latest)}`, svg);
+    }
+
+    function barChart(title, rows, unit, color) {
+      if (!rows.length) return chartFrame(title, "暂无跑量", `<div class="chart-empty">记录距离后显示每周跑量</div>`);
+      const max = Math.max(...rows.map((r) => r.value), 1);
+      const bars = rows.map((r, i) => {
+        const w = 22;
+        const gap = 10;
+        const x = 36 + i * (w + gap);
+        const h = Math.max(4, (r.value / max) * 96);
+        const y = 132 - h;
+        return `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="5" fill="${color}"/><text x="${x + w / 2}" y="151" text-anchor="middle" fill="#687571" font-size="10">${r.label}</text>`;
+      }).join("");
+      const total = rows.reduce((sum, r) => sum + r.value, 0);
+      const svg = `
+        <svg viewBox="0 0 340 170" role="img" aria-label="${title}">
+          <rect x="0" y="0" width="340" height="170" rx="8" fill="#faf8f2"/>
+          <line x1="34" y1="132" x2="316" y2="132" stroke="#e5ded2"/>
+          ${bars}
+          <text x="34" y="26" fill="#687571" font-size="11">最近 ${rows.length} 周</text>
+          <text x="226" y="26" fill="${color}" font-size="13" font-weight="700">合计 ${total.toFixed(1)} ${unit}</text>
+        </svg>
+      `;
+      return chartFrame(title, `合计 ${total.toFixed(1)} ${unit}`, svg);
+    }
+
+    function goalChart(score, latestPace, latestHr) {
+      const radius = 48;
+      const circumference = Math.PI * 2 * radius;
+      const dash = circumference * (score / 100);
+      const svg = `
+        <div class="goal-ring">
+          <svg viewBox="0 0 132 132" role="img" aria-label="目标接近度">
+            <circle cx="66" cy="66" r="${radius}" fill="none" stroke="#e9e2d6" stroke-width="14"/>
+            <circle cx="66" cy="66" r="${radius}" fill="none" stroke="#1f6f64" stroke-width="14" stroke-linecap="round"
+              stroke-dasharray="${dash} ${circumference - dash}" transform="rotate(-90 66 66)"/>
+            <text x="66" y="72" text-anchor="middle" fill="#1f6f64" font-size="24" font-weight="800">${score}%</text>
+          </svg>
+          <div>
+            <strong>${score}%</strong>
+            <p class="note">目标是 6:00/km 且平均心率约 143。${latestPace ? `最近配速 ${secondsToPace(latestPace)}，` : ""}${latestHr ? `最近均心 ${latestHr}。` : "先完成几次记录，进度会更准。"}</p>
+          </div>
+        </div>
+      `;
+      return chartFrame("目标接近度", "6:00/km + HR143", svg);
+    }
+
+    function weeklyDistance(rows) {
+      const buckets = new Map();
+      rows.forEach((record) => {
+        if (!record.date || !record.distanceNum) return;
+        const d = fromISO(record.date);
+        const monday = new Date(d.getTime() - ((d.getDay() + 6) % 7) * MS_DAY);
+        const key = toISO(monday);
+        buckets.set(key, (buckets.get(key) || 0) + record.distanceNum);
+      });
+      return [...buckets.entries()].slice(-8).map(([key, value], index) => ({ label: `W${index + 1}`, key, value }));
+    }
+
+    function average(values) {
+      return values.length ? values.reduce((a, b) => a + b, 0) / values.length : null;
+    }
+
+    function renderSettings() {
+      document.getElementById("viewSettings").innerHTML = `
+        <div class="section-title"><h3>设置</h3></div>
+        <div class="card">
+          <div class="row"><b>长期目标</b><span>6:00/km · 平均心率 ${state.targetHr}</span></div>
+          <div class="row"><b>训练频率</b><span>每周2-3次跑步 + 1-2次力量</span></div>
+          <div class="row"><b>主要心率</b><span>130-145，短暂不超过150</span></div>
+          <p class="note">iPhone 安装：Safari 打开本页，点分享按钮，选择“添加到主屏幕”。数据保存在本机浏览器。</p>
+        </div>
+        <div class="section-title"><h3>数据备份</h3></div>
+        <div class="card">
+          <p class="note">切换网址、换手机或清理 Safari 数据前，先导出备份。导入会恢复计划进度和训练记录。</p>
+          <div class="data-actions">
+            <button class="btn secondary" id="exportData">导出数据</button>
+            <button class="btn ghost" id="importData">导入数据</button>
+          </div>
+          <input class="file-input" id="importFile" type="file" accept="application/json,.json">
+        </div>
+        <div class="danger-zone">
+          <button class="btn warn wide" id="resetAll">重置全部数据</button>
+        </div>
+      `;
+      document.getElementById("exportData").addEventListener("click", exportData);
+      document.getElementById("importData").addEventListener("click", () => document.getElementById("importFile").click());
+      document.getElementById("importFile").addEventListener("change", importData);
+      document.getElementById("resetAll").addEventListener("click", () => {
+        if (!confirm("确定重置训练计划和记录吗？")) return;
+        state = defaultState();
+        saveState();
+        render();
+      });
+    }
+
+    function exportData() {
+      const backup = {
+        app: "low-hr-running",
+        version: 1,
+        exportedAt: new Date().toISOString(),
+        state
+      };
+      const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `低心率跑步备份-${toISO(new Date())}.json`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+
+    async function importData(event) {
+      const file = event.target.files?.[0];
+      event.target.value = "";
+      if (!file) return;
+      try {
+        const backup = JSON.parse(await file.text());
+        const importedState = backup?.state || backup;
+        if (!Array.isArray(importedState?.plan) || !Array.isArray(importedState?.records)) {
+          throw new Error("invalid backup");
+        }
+        if (!confirm(`将导入 ${importedState.records.length} 条训练记录并覆盖当前数据，确定吗？`)) return;
+        state = normalizeState(importedState);
+        saveState();
+        render();
+        alert("数据导入成功。");
+      } catch {
+        alert("无法导入：请选择由本 App 导出的 JSON 备份文件。");
+      }
+    }
+
+    function completeWorkout(record = null) {
+      const workout = currentWorkout();
+      workout.status = "done";
+      workout.completedAt = toISO(new Date());
+      if (record) {
+        state.records.push({ ...record, date: toISO(new Date()), type: workout.type, workoutId: workout.id });
+      }
+      saveState();
+      render();
+    }
+
+    function postponeWorkout() {
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      const pending = state.plan.filter((item) => item.status === "pending");
+      pending.forEach((item, index) => {
+        item.scheduled = toISO(new Date(tomorrow.getTime() + index * 2 * MS_DAY));
+      });
+      state.calendarMonth = toISO(new Date(tomorrow.getFullYear(), tomorrow.getMonth(), 1));
+      state.selectedDate = toISO(tomorrow);
+      saveState();
+      render();
+    }
+
+    function skipWorkout() {
+      if (!confirm("跳过后会进入下一次训练，确定吗？")) return;
+      const workout = currentWorkout();
+      workout.status = "skipped";
+      workout.completedAt = toISO(new Date());
+      saveState();
+      render();
+    }
+
+    function rescheduleFromToday() {
+      const today = new Date();
+      state.plan.filter((item) => item.status === "pending").forEach((item, index) => {
+        item.scheduled = toISO(new Date(today.getTime() + index * 2 * MS_DAY));
+      });
+      state.calendarMonth = toISO(new Date(today.getFullYear(), today.getMonth(), 1));
+      state.selectedDate = toISO(today);
+      saveState();
+      render();
+    }
+
+    function escapeHtml(value) {
+      return String(value).replace(/[&<>"']/g, (char) => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#039;"
+      }[char]));
+    }
+
+    document.querySelectorAll(".tab").forEach((button) => {
+      button.addEventListener("click", () => {
+        activateTab(button.dataset.tab);
+      });
+    });
+
+    function activateTab(tab) {
+      document.querySelectorAll(".tab").forEach((b) => b.classList.toggle("active", b.dataset.tab === tab));
+      document.getElementById("viewToday").classList.toggle("hidden", tab !== "today");
+      document.getElementById("viewPlan").classList.toggle("hidden", tab !== "plan");
+      document.getElementById("viewStats").classList.toggle("hidden", tab !== "stats");
+      document.getElementById("viewSettings").classList.toggle("hidden", tab !== "settings");
+    }
+
+    document.getElementById("cancelRecord").addEventListener("click", () => document.getElementById("recordDialog").close());
+    document.getElementById("recordForm").addEventListener("submit", (event) => {
+      event.preventDefault();
+      const data = Object.fromEntries(new FormData(event.currentTarget).entries());
+      completeWorkout(data);
+      event.currentTarget.reset();
+      document.getElementById("recordDialog").close();
+    });
+
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("./sw.js").catch(() => {});
+    }
+
+    render();
+  </script>
+</body>
+</html>
