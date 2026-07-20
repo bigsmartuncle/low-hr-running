@@ -1,4 +1,4 @@
-const CACHE_NAME = "low-hr-running-v8";
+const CACHE_NAME = "low-hr-running-v9";
 const ASSETS = ["./", "./index.html", "./manifest.json", "./icon.svg"];
 
 self.addEventListener("install", (event) => {

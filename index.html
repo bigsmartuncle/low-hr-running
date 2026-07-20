@@ -24,6 +24,9 @@
       --blue: #316a93;
       --gold: #c5923b;
       --soft: #efeae0;
+      --day-train: #e6f2fa;
+      --day-done: #dff2df;
+      --day-missed: #f8ded8;
       --shadow: 0 14px 34px rgba(35, 42, 38, .12);
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
     }
@@ -182,14 +185,28 @@
     textarea { min-height: 74px; resize: vertical; }
     dialog {
       border: 0;
-      width: min(560px, calc(100% - 24px));
+      width: min(420px, calc(100vw - 20px));
+      max-width: calc(100vw - 20px);
+      max-height: calc(100dvh - 72px);
       border-radius: 8px;
       padding: 0;
       box-shadow: var(--shadow);
+      overflow: hidden;
     }
     dialog::backdrop { background: rgba(20, 27, 25, .42); }
-    .modal { padding: 16px; }
+    .modal {
+      max-height: calc(100dvh - 72px);
+      overflow-x: hidden;
+      overflow-y: auto;
+      padding: 14px;
+    }
     .modal h3 { margin: 0 0 12px; }
+    .modal .actions {
+      position: sticky;
+      bottom: 0;
+      background: #fff;
+      padding-top: 10px;
+    }
     .hidden { display: none !important; }
     .note { color: var(--muted); font-size: 13px; line-height: 1.55; }
     .progress {
@@ -225,7 +242,11 @@
     }
     .day.out { opacity: .38; }
     .day.today { border-color: var(--green); box-shadow: inset 0 0 0 1px var(--green); }
-    .day.selected { background: #e7f0d0; border-color: #9cbf5e; }
+    .day.rest-day { background: #fff; }
+    .day.training-day { background: var(--day-train); border-color: #bfdceb; }
+    .day.done-day { background: var(--day-done); border-color: #8fc88f; }
+    .day.missed-day { background: var(--day-missed); border-color: #e89a8b; }
+    .day.selected { border-color: var(--green); box-shadow: inset 0 0 0 2px var(--green); }
     .day-num { font-size: 13px; color: var(--muted); }
     .tag {
       display: inline-flex;
@@ -286,6 +307,13 @@
     .danger-zone { margin-top: 20px; }
     .data-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
     .file-input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+    @media (max-width: 520px) {
+      .grid2 { grid-template-columns: 1fr; }
+      dialog { width: calc(100vw - 18px); max-height: calc(100dvh - 56px); }
+      .modal { max-height: calc(100dvh - 56px); padding: 12px; }
+      input, textarea, select { padding: 10px; }
+      textarea { min-height: 64px; }
+    }
     @media (max-width: 430px) {
       .app { padding-left: 12px; padding-right: 12px; }
       .calendar { gap: 4px; }
@@ -295,7 +323,6 @@
     }
     @media (max-width: 380px) {
       .metrics { grid-template-columns: 1fr; }
-      .grid2 { grid-template-columns: 1fr; }
       .hero h2 { font-size: 24px; }
       h1 { font-size: 19px; }
       .day { min-height: 58px; }
@@ -355,6 +382,7 @@
 
   <script>
     const STORAGE_KEY = "lowHrRunningPlan.v1";
+    const APP_VERSION = "2026-07-20-record-cancel-v9";
     const MS_DAY = 86400000;
 
     const stages = [
@@ -447,6 +475,7 @@
         selectedDate: toISO(today),
         records: [],
         reminder: { enabled: false, time: "09:00", lastDate: "" },
+        lastSeenVersion: "",
         plan: buildPlan(today)
       };
     }
@@ -465,6 +494,7 @@
       state.calendarMonth = state.calendarMonth || toISO(new Date());
       state.selectedDate = state.selectedDate || toISO(new Date());
       state.reminder = { ...fallback.reminder, ...(parsed.reminder || {}) };
+      state.lastSeenVersion = parsed.lastSeenVersion || "";
       return state;
     }
 
@@ -479,6 +509,7 @@
     }
 
     let state = loadState();
+    let updateNoticeQueued = false;
     markPastDueMisses();
     saveState();
 
@@ -551,6 +582,13 @@
       return "run";
     }
 
+    function dayStateClass(item) {
+      if (!item) return "rest-day";
+      if (item.status === "done" && recordForWorkout(item)) return "done-day";
+      if (["done", "missed", "skipped"].includes(item.status)) return "missed-day";
+      return "training-day";
+    }
+
     function render() {
       if (markPastDueMisses()) saveState();
       const workout = todayWorkout() || nextWorkout() || currentWorkout();
@@ -568,6 +606,7 @@
       const next = nextWorkout();
       const displayWorkout = workout || next || state.plan[state.plan.length - 1];
       const isDue = Boolean(workout && workout.status === "pending");
+      const todayRecord = recordForWorkout(workout);
       const stage = currentStage(displayWorkout.week);
       const completed = state.plan.filter((item) => item.status === "done").length;
       const progress = Math.round((completed / state.plan.length) * 100);
@@ -606,9 +645,10 @@
           ` : workout ? `
             <div class="row"><b>当前状态</b><span>${statusText(workout.status)}</span></div>
             <div class="row"><b>计划内容</b><span>${workout.type} · HR ${workout.hr}</span></div>
-            ${recordForWorkout(workout) ? `<div class="row"><b>记录</b><span>${recordForWorkout(workout).distance || "--"}km · 均心 ${recordForWorkout(workout).avgHr || "--"}</span></div>` : `<p class="note">如果你今天已经训练但忘了记录，可以在这里补录；补录后这一天会改为已完成。</p>`}
+            ${todayRecord ? `<div class="row"><b>记录</b><span>${todayRecord.distance || "--"}km · 均心 ${todayRecord.avgHr || "--"}</span></div>` : `<p class="note">如果你今天已经训练但忘了记录，可以在这里补录；补录后这一天会改为已完成。</p>`}
             <div class="actions">
               <button class="btn wide" id="openRecord">补录/更新数据</button>
+              ${todayRecord ? `<button class="btn warn wide" id="cancelWorkoutRecord">取消记录</button>` : ""}
               <button class="btn ghost wide" id="goPlan">查看计划日历</button>
             </div>
           ` : `
@@ -628,6 +668,7 @@
         document.getElementById("skip").addEventListener("click", () => skipWorkout(workout));
       } else if (workout) {
         document.getElementById("openRecord").addEventListener("click", () => openRecordDialog(workout));
+        document.getElementById("cancelWorkoutRecord")?.addEventListener("click", () => cancelWorkoutRecord(workout));
         document.getElementById("goPlan").addEventListener("click", () => activateTab("plan"));
       } else {
         document.getElementById("goPlan").addEventListener("click", () => activateTab("plan"));
@@ -676,6 +717,9 @@
       document.querySelectorAll("[data-record-id]").forEach((button) => {
         button.addEventListener("click", () => openRecordDialog(findWorkout(button.dataset.recordId)));
       });
+      document.querySelectorAll("[data-cancel-record-id]").forEach((button) => {
+        button.addEventListener("click", () => cancelWorkoutRecord(findWorkout(button.dataset.cancelRecordId)));
+      });
       document.querySelectorAll("[data-complete-id]").forEach((button) => {
         button.addEventListener("click", () => completeWorkout(findWorkout(button.dataset.completeId)));
       });
@@ -697,9 +741,10 @@
         const out = date.getMonth() !== month.getMonth() ? " out" : "";
         const isToday = iso === today ? " today" : "";
         const selected = iso === selectedDate ? " selected" : "";
+        const dayState = ` ${dayStateClass(item)}`;
         const label = item ? item.short : "休";
         return `
-          <button class="day${out}${isToday}${selected}" data-date="${iso}" aria-label="${iso} ${item ? item.type : "休息"}">
+          <button class="day${dayState}${out}${isToday}${selected}" data-date="${iso}" aria-label="${iso} ${item ? item.type : "休息"}">
             <span class="day-num">${date.getDate()}</span>
             <span class="tag ${tagClass(item)}">${label}</span>
           </button>
@@ -723,6 +768,7 @@
           ${canOperate ? `
             <div class="actions">
               <button class="btn ${item.status === "done" ? "secondary" : ""}" data-record-id="${item.id}">${item.status === "done" ? "更新记录" : "补录数据"}</button>
+              ${record ? `<button class="btn warn" data-cancel-record-id="${item.id}">取消记录</button>` : ""}
               ${item.status === "pending" ? `<button class="btn secondary" data-complete-id="${item.id}">直接完成</button><button class="btn warn wide" data-skip-id="${item.id}">跳过</button>` : ""}
             </div>
           ` : ""}
@@ -1088,6 +1134,21 @@
       render();
     }
 
+    function cancelWorkoutRecord(workout) {
+      if (!workout) return;
+      const existingIndex = state.records.findIndex((item) => item.workoutId === workout.id);
+      if (existingIndex < 0) {
+        alert("这次训练还没有记录可取消。");
+        return;
+      }
+      if (!confirm("确定取消这次记录吗？取消后只会影响这一天，历史里这条运动数据会删除。")) return;
+      state.records.splice(existingIndex, 1);
+      workout.status = workout.scheduled < toISO(new Date()) ? "missed" : "pending";
+      delete workout.completedAt;
+      saveState();
+      render();
+    }
+
     function postponeWorkout() {
       const tomorrow = new Date();
       tomorrow.setDate(tomorrow.getDate() + 1);
@@ -1127,6 +1188,16 @@
       }[char]));
     }
 
+    function showUpdateNotice() {
+      if (state.lastSeenVersion === APP_VERSION || updateNoticeQueued) return;
+      updateNoticeQueued = true;
+      setTimeout(() => {
+        alert("功能已更新：已记录训练现在可以取消；计划日历已按休息、训练、完成、未完成显示不同底色；填写记录弹窗已优化为更适合手机输入。");
+        state.lastSeenVersion = APP_VERSION;
+        saveState();
+      }, 350);
+    }
+
     document.querySelectorAll(".tab").forEach((button) => {
       button.addEventListener("click", () => {
         activateTab(button.dataset.tab);
@@ -1161,6 +1232,7 @@
 
     setInterval(checkDailyReminder, 60000);
     render();
+    showUpdateNotice();
   </script>
 </body>
 </html>
